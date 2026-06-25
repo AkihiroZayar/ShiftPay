@@ -615,14 +615,26 @@
           <input type="checkbox" id="jobWeekendEnabled" checked>
           <span class="toggle-slider"></span>
         </label>
-        <div class="input-with-suffix optional-rate-input" id="jobWeekendInputWrap">
-          <input type="number" id="jobWeekendMult" class="form-control" value="1.25" min="1" max="5" step="0.05">
-          <span class="input-suffix">×</span>
+        <div class="rate-mode-wrap" id="jobWeekendModeWrap">
+          <div class="rate-mode-tabs">
+            <button type="button" class="rate-mode-tab active" data-mode="multiplier" data-target="weekend">× Rate</button>
+            <button type="button" class="rate-mode-tab" data-mode="fixed" data-target="weekend">¥ Fixed</button>
+          </div>
+          <div class="rate-mode-input" id="weekendMultiplierInput">
+            <input type="number" id="jobWeekendMult" class="form-control input-sm" value="1.25" min="1" max="5" step="0.05">
+            <span class="input-suffix">×</span>
+          </div>
+          <div class="rate-mode-input" id="weekendFixedInput" style="display:none">
+            <span class="input-prefix-yen">¥</span>
+            <input type="number" id="jobWeekendFixed" class="form-control input-sm" placeholder="e.g. 1500" min="0" step="50">
+            <span class="input-suffix">/hr</span>
+          </div>
         </div>
         <span class="rate-preview-badge" id="weekendRatePreview"></span>
       </div>
       <p class="form-hint" id="jobWeekendHint">Weekend shifts pay 1.25× base wage</p>
     </div>
+
     <div class="form-group">
       <label class="form-label">Holiday Rate <span class="label-optional">(National Holidays)</span></label>
       <div class="optional-rate-row">
@@ -630,9 +642,20 @@
           <input type="checkbox" id="jobHolidayEnabled" checked>
           <span class="toggle-slider"></span>
         </label>
-        <div class="input-with-suffix optional-rate-input" id="jobHolidayInputWrap">
-          <input type="number" id="jobHolidayMult" class="form-control" value="1.5" min="1" max="5" step="0.05">
-          <span class="input-suffix">×</span>
+        <div class="rate-mode-wrap" id="jobHolidayModeWrap">
+          <div class="rate-mode-tabs">
+            <button type="button" class="rate-mode-tab active" data-mode="multiplier" data-target="holiday">× Rate</button>
+            <button type="button" class="rate-mode-tab" data-mode="fixed" data-target="holiday">¥ Fixed</button>
+          </div>
+          <div class="rate-mode-input" id="holidayMultiplierInput">
+            <input type="number" id="jobHolidayMult" class="form-control input-sm" value="1.5" min="1" max="5" step="0.05">
+            <span class="input-suffix">×</span>
+          </div>
+          <div class="rate-mode-input" id="holidayFixedInput" style="display:none">
+            <span class="input-prefix-yen">¥</span>
+            <input type="number" id="jobHolidayFixed" class="form-control input-sm" placeholder="e.g. 1800" min="0" step="50">
+            <span class="input-suffix">/hr</span>
+          </div>
         </div>
         <span class="rate-preview-badge" id="holidayRatePreview"></span>
       </div>

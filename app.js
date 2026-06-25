@@ -585,13 +585,20 @@ const App = (() => {
     const avatarEl = document.getElementById('sidebarAvatar');
     const spNameEl = document.getElementById('sidebarProfileName');
 
-    if (nameEl)   nameEl.textContent   = p.appName     || 'ShiftPay';
-    if (tagEl)    tagEl.textContent    = p.appSubtitle || 'Income Tracker';
+    if (nameEl) nameEl.textContent = p.appName     || 'ShiftPay';
+    if (tagEl)  tagEl.textContent  = p.appSubtitle || 'Income Tracker';
+
     if (avatarEl) {
-      avatarEl.textContent  = p.name ? p.name[0].toUpperCase() : '?';
-      avatarEl.style.background = p.avatarColor || '#3B82F6';
+      if (p.name) {
+        avatarEl.textContent = p.name[0].toUpperCase();
+        avatarEl.style.background = `linear-gradient(135deg, ${p.avatarColor || '#3B82F6'}, #6366f1)`;
+      } else {
+        avatarEl.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:18px;height:18px"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>`;
+        avatarEl.style.background = 'linear-gradient(135deg, #3B82F6, #6366f1)';
+      }
     }
-    if (spNameEl) spNameEl.textContent = p.name || 'Set up profile';
+
+    if (spNameEl) spNameEl.textContent = p.name || 'My Profile';
     document.title = (p.appName || 'ShiftPay') + ' — Income Tracker';
   }
 

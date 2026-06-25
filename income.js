@@ -42,25 +42,54 @@ const Income = (() => {
 
   function getEffectiveRate(shift, job) {
     if (shift.overrideRate && shift.overrideRate > 0) {
-      return { rate: shift.overrideRate, multiplier: null, dayType: 'custom', overtimeType: null };
+      return { rate: shift.overrideRate, multiplier: null, dayType: 'custom', overtimeType: null, rateMode: 'override' };
     }
+
     const dayType = getDayType(shift.date);
+    let rate       = job.baseWage;
     let multiplier = 1;
+    let rateMode   = 'base';
 
-    /* Only apply day-type premium if enabled on this job */
     if (dayType === 'holiday' && job.holidayEnabled !== false) {
-      multiplier = job.holidayMultiplier || 1.5;
+      if (job.holidayMode === 'fixed' && job.holidayFixedRate > 0) {
+        rate       = job.holidayFixedRate;
+        multiplier = null;
+        rateMode   = 'fixed';
+      } else {
+        multiplier = job.holidayMultiplier || 1.5;
+        rate       = job.baseWage * multiplier;
+        rateMode   = 'multiplier';
+      }
     } else if (dayType === 'weekend' && job.weekendEnabled !== false) {
-      multiplier = job.weekendMultiplier || 1.25;
+      if (job.weekendMode === 'fixed' && job.weekendFixedRate > 0) {
+        rate       = job.weekendFixedRate;
+        multiplier = null;
+        rateMode   = 'fixed';
+      } else {
+        multiplier = job.weekendMultiplier || 1.25;
+        rate       = job.baseWage * multiplier;
+        rateMode   = 'multiplier';
+      }
     }
 
-    /* Japanese overtime rules stacked on top of day-type rate */
+    /* Japanese overtime stacked on top — only applies in multiplier/base mode */
     const ot = shift.overtimeType || null;
-    if (ot === 'overtime')           multiplier = Math.max(multiplier, 1.25);
-    if (ot === 'latenight')          multiplier += 0.25;
-    if (ot === 'overtime+latenight') { multiplier = Math.max(multiplier, 1.25); multiplier += 0.25; }
+    if (ot && rateMode !== 'fixed') {
+      const base = job.baseWage;
+      if (ot === 'overtime')           multiplier = Math.max(multiplier || 1, 1.25);
+      if (ot === 'latenight')          multiplier = (multiplier || 1) + 0.25;
+      if (ot === 'overtime+latenight') { multiplier = Math.max(multiplier || 1, 1.25); multiplier += 0.25; }
+      rate = base * multiplier;
+      rateMode = 'multiplier';
+    }
 
-    return { rate: job.baseWage * multiplier, multiplier: parseFloat(multiplier.toFixed(2)), dayType, overtimeType: ot };
+    return {
+      rate,
+      multiplier: multiplier !== null ? parseFloat((multiplier).toFixed(2)) : null,
+      dayType,
+      overtimeType: ot,
+      rateMode,
+    };
   }
 
   /* ── Overtime segment calculation ── */

@@ -288,27 +288,35 @@ const Modals = (() => {
     if (jobId) {
       const job = Storage.getJobById(jobId);
       if (!job) return;
-      document.getElementById('jobModalTitle').textContent   = 'Edit Job';
-      document.getElementById('jobName').value               = job.name;
-      document.getElementById('jobCompany').value            = job.company || '';
-      document.getElementById('jobWage').value               = job.baseWage;
-      document.getElementById('jobColor').value              = job.color;
-      document.getElementById('jobWeekendEnabled').checked   = job.weekendEnabled !== false;
-      document.getElementById('jobWeekendMult').value        = job.weekendMultiplier;
-      document.getElementById('jobHolidayEnabled').checked   = job.holidayEnabled !== false;
-      document.getElementById('jobHolidayMult').value        = job.holidayMultiplier;
-      document.getElementById('deleteJobBtn').style.display  = '';
+      document.getElementById('jobModalTitle').textContent  = 'Edit Job';
+      document.getElementById('jobName').value              = job.name;
+      document.getElementById('jobCompany').value           = job.company || '';
+      document.getElementById('jobWage').value              = job.baseWage;
+      document.getElementById('jobColor').value             = job.color;
+      document.getElementById('jobWeekendEnabled').checked  = job.weekendEnabled !== false;
+      document.getElementById('jobWeekendMult').value       = job.weekendMultiplier || 1.25;
+      document.getElementById('jobWeekendFixed').value      = job.weekendFixedRate  || '';
+      document.getElementById('jobHolidayEnabled').checked  = job.holidayEnabled !== false;
+      document.getElementById('jobHolidayMult').value       = job.holidayMultiplier || 1.5;
+      document.getElementById('jobHolidayFixed').value      = job.holidayFixedRate  || '';
+      _setRateMode('weekend', job.weekendMode || 'multiplier');
+      _setRateMode('holiday', job.holidayMode || 'multiplier');
+      document.getElementById('deleteJobBtn').style.display = '';
     } else {
-      document.getElementById('jobModalTitle').textContent   = 'Add Job';
-      document.getElementById('jobName').value               = '';
-      document.getElementById('jobCompany').value            = '';
-      document.getElementById('jobWage').value               = '';
-      document.getElementById('jobColor').value              = '#3B82F6';
-      document.getElementById('jobWeekendEnabled').checked   = true;
-      document.getElementById('jobWeekendMult').value        = '1.25';
-      document.getElementById('jobHolidayEnabled').checked   = true;
-      document.getElementById('jobHolidayMult').value        = '1.5';
-      document.getElementById('deleteJobBtn').style.display  = 'none';
+      document.getElementById('jobModalTitle').textContent  = 'Add Job';
+      document.getElementById('jobName').value              = '';
+      document.getElementById('jobCompany').value           = '';
+      document.getElementById('jobWage').value              = '';
+      document.getElementById('jobColor').value             = '#3B82F6';
+      document.getElementById('jobWeekendEnabled').checked  = true;
+      document.getElementById('jobWeekendMult').value       = '1.25';
+      document.getElementById('jobWeekendFixed').value      = '';
+      document.getElementById('jobHolidayEnabled').checked  = true;
+      document.getElementById('jobHolidayMult').value       = '1.5';
+      document.getElementById('jobHolidayFixed').value      = '';
+      _setRateMode('weekend', 'multiplier');
+      _setRateMode('holiday', 'multiplier');
+      document.getElementById('deleteJobBtn').style.display = 'none';
     }
 
     _updateJobPreview();
@@ -324,94 +332,116 @@ const Modals = (() => {
     _editingJobId = null;
   }
 
+  /* ── Rate mode switcher helper ── */
+  function _setRateMode(target, mode) {
+    const multWrap  = document.getElementById(target + 'MultiplierInput');
+    const fixedWrap = document.getElementById(target + 'FixedInput');
+    const tabs      = document.querySelectorAll(`.rate-mode-tab[data-target="${target}"]`);
+
+    tabs.forEach(t => t.classList.toggle('active', t.dataset.mode === mode));
+    if (multWrap)  multWrap.style.display  = mode === 'multiplier' ? 'flex' : 'none';
+    if (fixedWrap) fixedWrap.style.display = mode === 'fixed'      ? 'flex' : 'none';
+  }
+
+  function _getRateMode(target) {
+    const activeTab = document.querySelector(`.rate-mode-tab.active[data-target="${target}"]`);
+    return activeTab?.dataset.mode || 'multiplier';
+  }
+
   function _updateJobPreview() {
     const name           = document.getElementById('jobName')?.value.trim() || 'Job Preview';
     const wage           = parseFloat(document.getElementById('jobWage')?.value) || 0;
     const color          = document.getElementById('jobColor')?.value || '#3B82F6';
     const weekendEnabled = document.getElementById('jobWeekendEnabled')?.checked !== false;
-    const weekendMult    = parseFloat(document.getElementById('jobWeekendMult')?.value) || 1.25;
     const holidayEnabled = document.getElementById('jobHolidayEnabled')?.checked !== false;
+    const weekendMode    = _getRateMode('weekend');
+    const holidayMode    = _getRateMode('holiday');
+    const weekendMult    = parseFloat(document.getElementById('jobWeekendMult')?.value) || 1.25;
+    const weekendFixed   = parseFloat(document.getElementById('jobWeekendFixed')?.value) || 0;
     const holidayMult    = parseFloat(document.getElementById('jobHolidayMult')?.value) || 1.5;
+    const holidayFixed   = parseFloat(document.getElementById('jobHolidayFixed')?.value) || 0;
+
+    /* Effective rates */
+    const weekendRate = weekendEnabled
+      ? (weekendMode === 'fixed' ? weekendFixed : wage * weekendMult)
+      : wage;
+    const holidayRate = holidayEnabled
+      ? (holidayMode === 'fixed' ? holidayFixed : wage * holidayMult)
+      : wage;
 
     /* Preview card */
-    const previewHeader = document.getElementById('jobPreviewColor');
-    if (previewHeader) {
-      previewHeader.style.borderLeftColor = color;
-      previewHeader.style.background      = color + '18';
-    }
+    const ph = document.getElementById('jobPreviewColor');
+    if (ph) { ph.style.borderLeftColor = color; ph.style.background = color + '18'; }
     const nameEl = document.getElementById('jobPreviewName');
     if (nameEl) nameEl.textContent = name;
 
-    /* Rate display */
-    const weekday = document.getElementById('jpWeekday');
-    const weekend = document.getElementById('jpWeekend');
-    const holiday = document.getElementById('jpHoliday');
+    const weekday    = document.getElementById('jpWeekday');
+    const weekend    = document.getElementById('jpWeekend');
+    const holiday    = document.getElementById('jpHoliday');
     const weekendTag = document.getElementById('jpWeekendTag');
     const holidayTag = document.getElementById('jpHolidayTag');
-    const weekendWrap = document.getElementById('jobWeekendInputWrap');
-    const holidayWrap = document.getElementById('jobHolidayInputWrap');
 
     if (weekday) weekday.textContent = Income.formatCurrency(wage) + '/hr';
 
+    /* Weekend */
     if (weekendEnabled) {
-      if (weekend) { weekend.textContent = Income.formatCurrency(wage * weekendMult) + '/hr'; weekend.style.opacity = '1'; }
-      if (weekendTag) weekendTag.style.display = 'none';
-      if (weekendWrap) weekendWrap.style.opacity = '1';
-      document.getElementById('jobWeekendMult').disabled = false;
-      document.getElementById('jobWeekendHint').textContent = `Weekend shifts pay ×${weekendMult} = ${Income.formatCurrency(wage * weekendMult)}/hr`;
+      const label = weekendMode === 'fixed'
+        ? `¥ fixed rate`
+        : `×${weekendMult} multiplier`;
+      if (weekend)    { weekend.textContent = Income.formatCurrency(weekendRate) + '/hr'; weekend.style.opacity = '1'; }
+      if (weekendTag)   weekendTag.style.display = 'none';
+      const wHint = document.getElementById('jobWeekendHint');
+      if (wHint) wHint.textContent = `Weekend: ${Income.formatCurrency(weekendRate)}/hr (${label})`;
     } else {
-      if (weekend) { weekend.textContent = Income.formatCurrency(wage) + '/hr'; weekend.style.opacity = '0.45'; }
-      if (weekendTag) weekendTag.style.display = '';
-      if (weekendWrap) weekendWrap.style.opacity = '0.35';
-      document.getElementById('jobWeekendMult').disabled = true;
-      document.getElementById('jobWeekendHint').textContent = 'Weekend shifts use the same base rate';
+      if (weekend)    { weekend.textContent = Income.formatCurrency(wage) + '/hr'; weekend.style.opacity = '0.4'; }
+      if (weekendTag)   weekendTag.style.display = '';
+      const wHint = document.getElementById('jobWeekendHint');
+      if (wHint) wHint.textContent = 'Weekend shifts use the same base rate';
     }
 
+    /* Holiday */
     if (holidayEnabled) {
-      if (holiday) { holiday.textContent = Income.formatCurrency(wage * holidayMult) + '/hr'; holiday.style.opacity = '1'; }
-      if (holidayTag) holidayTag.style.display = 'none';
-      if (holidayWrap) holidayWrap.style.opacity = '1';
-      document.getElementById('jobHolidayMult').disabled = false;
-      document.getElementById('jobHolidayHint').textContent = `Holiday shifts pay ×${holidayMult} = ${Income.formatCurrency(wage * holidayMult)}/hr`;
+      const label = holidayMode === 'fixed'
+        ? `¥ fixed rate`
+        : `×${holidayMult} multiplier`;
+      if (holiday)    { holiday.textContent = Income.formatCurrency(holidayRate) + '/hr'; holiday.style.opacity = '1'; }
+      if (holidayTag)   holidayTag.style.display = 'none';
+      const hHint = document.getElementById('jobHolidayHint');
+      if (hHint) hHint.textContent = `Holiday: ${Income.formatCurrency(holidayRate)}/hr (${label})`;
     } else {
-      if (holiday) { holiday.textContent = Income.formatCurrency(wage) + '/hr'; holiday.style.opacity = '0.45'; }
-      if (holidayTag) holidayTag.style.display = '';
-      if (holidayWrap) holidayWrap.style.opacity = '0.35';
-      document.getElementById('jobHolidayMult').disabled = true;
-      document.getElementById('jobHolidayHint').textContent = 'Holiday shifts use the same base rate';
+      if (holiday)    { holiday.textContent = Income.formatCurrency(wage) + '/hr'; holiday.style.opacity = '0.4'; }
+      if (holidayTag)   holidayTag.style.display = '';
+      const hHint = document.getElementById('jobHolidayHint');
+      if (hHint) hHint.textContent = 'Holiday shifts use the same base rate';
     }
 
-    /* Weekend/holiday rate preview badges */
+    /* Badges */
     const wBadge = document.getElementById('weekendRatePreview');
     const hBadge = document.getElementById('holidayRatePreview');
-    if (wBadge) wBadge.textContent = weekendEnabled ? Income.formatCurrency(wage * weekendMult) + '/hr' : 'OFF';
-    if (hBadge) hBadge.textContent = holidayEnabled ? Income.formatCurrency(wage * holidayMult) + '/hr' : 'OFF';
-    if (wBadge) wBadge.className = 'rate-preview-badge' + (weekendEnabled ? ' badge-active' : ' badge-off');
-    if (hBadge) hBadge.className = 'rate-preview-badge' + (holidayEnabled ? ' badge-active' : ' badge-off');
+    if (wBadge) { wBadge.textContent = weekendEnabled ? Income.formatCurrency(weekendRate) + '/hr' : 'OFF'; wBadge.className = 'rate-preview-badge' + (weekendEnabled ? ' badge-active' : ' badge-off'); }
+    if (hBadge) { hBadge.textContent = holidayEnabled ? Income.formatCurrency(holidayRate) + '/hr' : 'OFF'; hBadge.className = 'rate-preview-badge' + (holidayEnabled ? ' badge-active' : ' badge-off'); }
   }
 
   function _saveJob() {
+    const weekendMode  = _getRateMode('weekend');
+    const holidayMode  = _getRateMode('holiday');
     const data = {
       name:              document.getElementById('jobName')?.value.trim(),
       company:           document.getElementById('jobCompany')?.value.trim(),
       baseWage:          parseFloat(document.getElementById('jobWage')?.value),
       color:             document.getElementById('jobColor')?.value,
       weekendEnabled:    document.getElementById('jobWeekendEnabled')?.checked !== false,
+      weekendMode,
       weekendMultiplier: parseFloat(document.getElementById('jobWeekendMult')?.value) || 1.25,
+      weekendFixedRate:  parseFloat(document.getElementById('jobWeekendFixed')?.value) || 0,
       holidayEnabled:    document.getElementById('jobHolidayEnabled')?.checked !== false,
+      holidayMode,
       holidayMultiplier: parseFloat(document.getElementById('jobHolidayMult')?.value) || 1.5,
+      holidayFixedRate:  parseFloat(document.getElementById('jobHolidayFixed')?.value) || 0,
     };
 
-    if (!data.name) {
-      showToast('Job name is required.', 'error');
-      document.getElementById('jobName')?.focus();
-      return;
-    }
-    if (!data.baseWage || data.baseWage <= 0) {
-      showToast('Please enter a valid hourly wage.', 'error');
-      document.getElementById('jobWage')?.focus();
-      return;
-    }
+    if (!data.name) { showToast('Job name is required.', 'error'); document.getElementById('jobName')?.focus(); return; }
+    if (!data.baseWage || data.baseWage <= 0) { showToast('Please enter a valid hourly wage.', 'error'); document.getElementById('jobWage')?.focus(); return; }
 
     if (_editingJobId) {
       Storage.updateJob(_editingJobId, data);
@@ -448,9 +478,17 @@ const Modals = (() => {
     document.getElementById('saveJobBtn')?.addEventListener('click', _saveJob);
     document.getElementById('deleteJobBtn')?.addEventListener('click', _deleteJob);
 
+    /* Rate mode tab clicks */
+    document.querySelectorAll('.rate-mode-tab').forEach(tab => {
+      tab.addEventListener('click', () => {
+        _setRateMode(tab.dataset.target, tab.dataset.mode);
+        _updateJobPreview();
+      });
+    });
+
     /* Live preview */
-    ['jobName','jobWage','jobColor','jobWeekendMult','jobHolidayMult',
-     'jobWeekendEnabled','jobHolidayEnabled'].forEach(id => {
+    ['jobName','jobWage','jobColor','jobWeekendMult','jobWeekendFixed',
+     'jobHolidayMult','jobHolidayFixed','jobWeekendEnabled','jobHolidayEnabled'].forEach(id => {
       const el = document.getElementById(id);
       if (!el) return;
       el.addEventListener('input',  _updateJobPreview);

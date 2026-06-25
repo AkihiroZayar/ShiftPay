@@ -508,8 +508,6 @@ const App = (() => {
     const goals = Storage.getGoals();
 
     const nameEl     = document.getElementById('profileName');
-    const appEl      = document.getElementById('profileAppName');
-    const subEl      = document.getElementById('profileAppSubtitle');
     const colorEl    = document.getElementById('profileAvatarColor');
     const goalEl     = document.getElementById('monthlyGoalInput');
     const avatarEl   = document.getElementById('profileAvatarLarge');
@@ -517,20 +515,21 @@ const App = (() => {
     const dispAppEl  = document.getElementById('profileAppNameDisplay');
 
     if (nameEl)     nameEl.value       = p.name || '';
-    if (appEl)      appEl.value        = p.appName || 'ShiftPay';
-    if (subEl)      subEl.value        = p.appSubtitle || 'Income Tracker';
     if (colorEl)    colorEl.value      = p.avatarColor || '#3B82F6';
     if (goalEl)     goalEl.value       = goals.monthlyGross || '';
-    if (avatarEl)   { avatarEl.textContent = p.name ? p.name[0].toUpperCase() : '?'; avatarEl.style.background = p.avatarColor || '#3B82F6'; }
+    if (avatarEl)   {
+      avatarEl.textContent  = p.name ? p.name[0].toUpperCase() : '?';
+      avatarEl.style.background = p.name
+        ? `linear-gradient(135deg, ${p.avatarColor || '#3B82F6'}, #6366f1)`
+        : 'linear-gradient(135deg, #3B82F6, #6366f1)';
+    }
     if (dispNameEl) dispNameEl.textContent = p.name || 'Your Profile';
-    if (dispAppEl)  dispAppEl.textContent  = p.appName || 'ShiftPay';
+    if (dispAppEl)  dispAppEl.textContent  = 'ShiftPay — Income Tracker';
 
-    /* Goal preview */
-    const goals2   = Storage.getGoals();
-    const now      = new Date();
-    const month    = Income.getMonth(now.getFullYear(), now.getMonth(), Storage.getTaxSettings());
-    const goalAmt  = goals2.monthlyGross || 0;
-    const prevEl   = document.getElementById('goalPreview');
+    const now     = new Date();
+    const month   = Income.getMonth(now.getFullYear(), now.getMonth(), Storage.getTaxSettings());
+    const goalAmt = goals.monthlyGross || 0;
+    const prevEl  = document.getElementById('goalPreview');
     if (prevEl && goalAmt > 0) {
       const pct = Math.min(100, Math.round((month.gross / goalAmt) * 100));
       prevEl.innerHTML = `
@@ -547,8 +546,6 @@ const App = (() => {
     document.getElementById('saveProfileBtn')?.addEventListener('click', () => {
       const p = {
         name:        document.getElementById('profileName')?.value.trim() || '',
-        appName:     document.getElementById('profileAppName')?.value.trim() || 'ShiftPay',
-        appSubtitle: document.getElementById('profileAppSubtitle')?.value.trim() || 'Income Tracker',
         avatarColor: document.getElementById('profileAvatarColor')?.value || '#3B82F6',
       };
       Storage.saveProfile(p);
@@ -580,26 +577,19 @@ const App = (() => {
   ════════════════════════════════════════════ */
   function _updateAppBranding() {
     const p = Storage.getProfile();
-    const nameEl   = document.getElementById('brandName');
-    const tagEl    = document.getElementById('brandTagline');
     const avatarEl = document.getElementById('sidebarAvatar');
     const spNameEl = document.getElementById('sidebarProfileName');
 
-    if (nameEl) nameEl.textContent = p.appName     || 'ShiftPay';
-    if (tagEl)  tagEl.textContent  = p.appSubtitle || 'Income Tracker';
-
     if (avatarEl) {
       if (p.name) {
-        avatarEl.textContent = p.name[0].toUpperCase();
+        avatarEl.textContent   = p.name[0].toUpperCase();
         avatarEl.style.background = `linear-gradient(135deg, ${p.avatarColor || '#3B82F6'}, #6366f1)`;
       } else {
         avatarEl.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:18px;height:18px"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>`;
         avatarEl.style.background = 'linear-gradient(135deg, #3B82F6, #6366f1)';
       }
     }
-
     if (spNameEl) spNameEl.textContent = p.name || 'My Profile';
-    document.title = (p.appName || 'ShiftPay') + ' — Income Tracker';
   }
 
   /* ════════════════════════════════════════════

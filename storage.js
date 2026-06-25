@@ -37,13 +37,20 @@ const Storage = (() => {
     const job = {
       id: uid(),
       createdAt: new Date().toISOString(),
-      name: data.name,
+      name:    data.name,
       company: data.company || '',
       baseWage: Number(data.baseWage),
-      weekendEnabled:    data.weekendEnabled  !== false,  // default ON
+
+      weekendEnabled:    data.weekendEnabled  !== false,
+      weekendMode:       data.weekendMode       || 'multiplier',   // 'multiplier' | 'fixed'
       weekendMultiplier: Number(data.weekendMultiplier) || 1.25,
-      holidayEnabled:    data.holidayEnabled  !== false,  // default ON
+      weekendFixedRate:  Number(data.weekendFixedRate)  || 0,
+
+      holidayEnabled:    data.holidayEnabled  !== false,
+      holidayMode:       data.holidayMode       || 'multiplier',
       holidayMultiplier: Number(data.holidayMultiplier) || 1.5,
+      holidayFixedRate:  Number(data.holidayFixedRate)  || 0,
+
       color: data.color || '#3B82F6',
     };
     const jobs = getJobs();

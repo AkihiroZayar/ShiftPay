@@ -151,21 +151,57 @@ const Income = (() => {
     };
   }
 
-  /* ── Single shift details ── */
+  /* ── Shift details — respects user's manual overtimeType only ── */
   function calcShiftDetails(shift, job, _taxSettings) {
-    const ot = calcOvertimeSegments(shift, job);
+    const startMin   = timeToMinutes(shift.startTime);
+    let   endMin     = timeToMinutes(shift.endTime);
+    if (endMin <= startMin) endMin += 24 * 60;
+    const breakMin   = Number(shift.breakMinutes) || 0;
+    const workedMin  = Math.max(0, endMin - startMin - breakMin);
+    const workedHours = workedMin / 60;
+
+    const dayType    = getDayType(shift.date);
+    const baseWage   = shift.overrideRate > 0 ? Number(shift.overrideRate) : job.baseWage;
+
+    /* Day-type multiplier */
+    let mult = 1;
+    if (dayType === 'holiday' && job.holidayEnabled !== false) {
+      mult = job.holidayMode === 'fixed' ? 1 : (job.holidayMultiplier || 1.5);
+    } else if (dayType === 'weekend' && job.weekendEnabled !== false) {
+      mult = job.weekendMode === 'fixed' ? 1 : (job.weekendMultiplier || 1.25);
+    }
+
+    /* Fixed yen rate overrides multiplier */
+    let rate = baseWage * mult;
+    if (dayType === 'holiday' && job.holidayEnabled !== false && job.holidayMode === 'fixed' && job.holidayFixedRate > 0) {
+      rate = job.holidayFixedRate;
+    } else if (dayType === 'weekend' && job.weekendEnabled !== false && job.weekendMode === 'fixed' && job.weekendFixedRate > 0) {
+      rate = job.weekendFixedRate;
+    }
+
+    /* User-selected overtime / late night ONLY — no auto-detection */
+    const ot = shift.overtimeType || null;
+    if (ot === 'overtime')           rate = Math.max(rate, baseWage * 1.25);
+    if (ot === 'latenight')          rate = rate + baseWage * 0.25;
+    if (ot === 'overtime+latenight') rate = Math.max(rate, baseWage * 1.25) + baseWage * 0.25;
+
+    const gross = workedHours * rate;
+
     return {
-      workedMinutes: ot.workedMinutes,
-      workedHours:   ot.workedHours,
-      rate:          ot.regularRate,           // base effective rate (for display)
-      multiplier:    ot.dayType === 'weekday' ? 1 : (ot.dayType === 'weekend' ? (job.weekendMultiplier || 1.25) : (job.holidayMultiplier || 1.5)),
-      dayType:       ot.dayType,
-      gross:         ot.gross,
-      deductions:    0,
-      net:           ot.gross,
-      overtimeDetails: ot,
-      isHoliday: ot.dayType === 'holiday',
-      isWeekend:  ot.dayType === 'weekend',
+      workedMinutes: workedMin,
+      workedHours,
+      rate,
+      multiplier: mult,
+      dayType,
+      gross,
+      deductions: 0,
+      net: gross,
+      overtimeDetails: {
+        hasOvertime:  ot === 'overtime' || ot === 'overtime+latenight',
+        hasLateNight: ot === 'latenight' || ot === 'overtime+latenight',
+      },
+      isHoliday: dayType === 'holiday',
+      isWeekend:  dayType === 'weekend',
     };
   }
 

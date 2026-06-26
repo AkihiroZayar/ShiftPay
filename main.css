@@ -2469,3 +2469,46 @@ textarea.form-control { resize: vertical; min-height: 60px; }
 [data-theme="light"] .sidebar-nav {
   padding: 8px;
 }
+
+/* ════════════════════════════════════════════
+   EXTRA PAY CHECKBOXES (overtime / late night)
+════════════════════════════════════════════ */
+.extra-pay-row {
+  display: flex;
+  gap: 10px;
+  margin-top: 6px;
+}
+.extra-pay-option {
+  flex: 1;
+  cursor: pointer;
+}
+.extra-pay-option input { display: none; }
+.extra-pay-box {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 12px 8px;
+  border: 2px solid var(--border-strong);
+  border-radius: 10px;
+  background: var(--bg-surface);
+  transition: all 0.15s;
+  text-align: center;
+}
+.extra-pay-option input:checked + .extra-pay-box {
+  border-color: var(--accent-blue);
+  background: rgba(59,130,246,0.1);
+}
+.extra-pay-icon  { font-size: 20px; }
+.extra-pay-label { font-size: 12px; font-weight: 600; color: var(--text-secondary); }
+.extra-pay-rate  { font-size: 13px; font-weight: 700; color: var(--accent-gold); font-family: var(--font-mono); }
+
+/* Dashboard simple grid */
+.dashboard-grid-simple {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+@media (max-width: 768px) {
+  .dashboard-grid-simple { grid-template-columns: 1fr; }
+}

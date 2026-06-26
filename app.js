@@ -85,12 +85,51 @@ const App = (() => {
     _renderProjection(y, m, tax);
     _renderGoalProgress(monthStat.gross);
     _renderRecentShifts(tax);
+    _renderMonthSummary(y, m, tax);
+  }
 
-    const chartYear = parseInt(document.getElementById('dashChartYear')?.value) || y;
-    const hoursYear = parseInt(document.getElementById('dashHoursYear')?.value) || y;
-    ChartsView.renderMonthlyBar('dashMonthlyChart', chartYear, tax);
-    ChartsView.renderJobDonut('dashJobChart', Storage.getShifts(), tax);
-    ChartsView.renderHoursBar('dashHoursChart', hoursYear);
+  function _renderMonthSummary(year, month, tax) {
+    const el = document.getElementById('monthSummaryContent');
+    if (!el) return;
+    const now        = new Date();
+    const monthData  = Income.getMonth(year, month, tax);
+    const jobs       = Storage.getJobs();
+    const allShifts  = Storage.getShiftsForMonth(year, month);
+    const jobMap     = new Map(jobs.map(j => [j.id, j]));
+
+    if (!allShifts.length) {
+      el.innerHTML = `<p style="color:var(--text-muted);text-align:center;padding:20px 0">No shifts this month yet.</p>`;
+      return;
+    }
+
+    /* Income per job this month */
+    const byJob = {};
+    allShifts.forEach(s => {
+      const job = jobMap.get(s.jobId);
+      if (!job) return;
+      const d = Income.calcShiftDetails(s, job, tax);
+      if (!byJob[s.jobId]) byJob[s.jobId] = { name: job.name, color: job.color, gross: 0, hours: 0 };
+      byJob[s.jobId].gross += d.gross;
+      byJob[s.jobId].hours += d.workedHours;
+    });
+
+    const rows = Object.values(byJob).sort((a,b) => b.gross - a.gross).map(j => `
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--border)">
+        <div style="display:flex;align-items:center;gap:8px">
+          <span style="width:10px;height:10px;border-radius:50%;background:${j.color};display:inline-block;flex-shrink:0"></span>
+          <span style="font-size:13px;font-weight:500">${j.name}</span>
+        </div>
+        <div style="text-align:right">
+          <div style="font-size:14px;font-weight:700;font-family:var(--font-mono);color:var(--accent-gold)">${Income.formatCurrency(j.gross)}</div>
+          <div style="font-size:11px;color:var(--text-muted)">${Income.formatHours(j.hours)}</div>
+        </div>
+      </div>`).join('');
+
+    el.innerHTML = rows + `
+      <div style="display:flex;justify-content:space-between;padding:12px 0;font-weight:700">
+        <span>Total</span>
+        <span style="font-family:var(--font-mono);color:var(--accent-green)">${Income.formatCurrency(monthData.gross)}</span>
+      </div>`;
   }
 
   function _renderProjection(year, month, tax) {
@@ -682,18 +721,7 @@ const App = (() => {
      YEAR SELECTORS
   ════════════════════════════════════════════ */
   function _initYearSelectors() {
-    const curYear = new Date().getFullYear();
-    const shifts  = Storage.getShifts();
-    const yrs     = [...new Set(shifts.map(s => parseInt(s.date.slice(0,4))))];
-    yrs.push(curYear);
-    const years   = [...new Set(yrs)].sort((a,b) => b-a);
-
-    ['dashChartYear','dashHoursYear'].forEach(id => {
-      const sel = document.getElementById(id);
-      if (!sel) return;
-      sel.innerHTML = years.map(y => `<option value="${y}" ${y===curYear?'selected':''}>${y}</option>`).join('');
-      sel.addEventListener('change', () => { if (_view === 'dashboard') _renderDashboard(); });
-    });
+    // Charts removed — nothing to initialise
   }
 
   /* ════════════════════════════════════════════

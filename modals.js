@@ -123,8 +123,9 @@ const Modals = (() => {
       document.getElementById('shiftBreak').value         = shift.breakMinutes;
       document.getElementById('shiftOverrideRate').value  = shift.overrideRate || '';
       document.getElementById('shiftNotes').value         = shift.notes || '';
-      const otEl = document.getElementById('shiftOvertimeType');
-      if (otEl) otEl.value = shift.overtimeType || '';
+      const ot = shift.overtimeType || '';
+      document.getElementById('shiftIsOvertime').checked  = ot === 'overtime' || ot === 'overtime+latenight';
+      document.getElementById('shiftIsLateNight').checked = ot === 'latenight' || ot === 'overtime+latenight';
       document.getElementById('deleteShiftBtn').style.display = '';
     } else {
       /* ─ Add mode ─ */
@@ -136,8 +137,8 @@ const Modals = (() => {
       document.getElementById('shiftBreak').value         = '60';
       document.getElementById('shiftOverrideRate').value  = '';
       document.getElementById('shiftNotes').value         = '';
-      const otEl = document.getElementById('shiftOvertimeType');
-      if (otEl) otEl.value = '';
+      document.getElementById('shiftIsOvertime').checked  = false;
+      document.getElementById('shiftIsLateNight').checked = false;
       document.getElementById('deleteShiftBtn').style.display = 'none';
     }
 
@@ -174,6 +175,8 @@ const Modals = (() => {
     const job = Storage.getJobById(jobId);
     if (!job) { previewEl.style.display = 'none'; return; }
 
+    const isOT = document.getElementById('shiftIsOvertime')?.checked;
+    const isLN = document.getElementById('shiftIsLateNight')?.checked;
     const pseudoShift = {
       date: dateStr,
       jobId,
@@ -181,6 +184,7 @@ const Modals = (() => {
       endTime:      end,
       breakMinutes: breakMin,
       overrideRate: override ? Number(override) : null,
+      overtimeType: isOT && isLN ? 'overtime+latenight' : isOT ? 'overtime' : isLN ? 'latenight' : null,
     };
 
     const tax     = Storage.getTaxSettings();
@@ -228,7 +232,10 @@ const Modals = (() => {
       endTime:      document.getElementById('shiftEnd')?.value,
       breakMinutes: parseInt(document.getElementById('shiftBreak')?.value) || 0,
       overrideRate: document.getElementById('shiftOverrideRate')?.value || null,
-      overtimeType: document.getElementById('shiftOvertimeType')?.value || null,
+      overtimeType: document.getElementById('shiftIsOvertime')?.checked  &&
+                    document.getElementById('shiftIsLateNight')?.checked  ? 'overtime+latenight' :
+                    document.getElementById('shiftIsOvertime')?.checked   ? 'overtime' :
+                    document.getElementById('shiftIsLateNight')?.checked  ? 'latenight' : null,
       notes:        document.getElementById('shiftNotes')?.value || '',
     };
 
@@ -267,7 +274,7 @@ const Modals = (() => {
     document.getElementById('deleteShiftBtn')?.addEventListener('click', _deleteShift);
 
     /* Live preview on any field change */
-    const previewFields = ['shiftDate','shiftJobId','shiftStart','shiftEnd','shiftBreak','shiftOverrideRate'];
+    const previewFields = ['shiftDate','shiftJobId','shiftStart','shiftEnd','shiftBreak','shiftOverrideRate','shiftIsOvertime','shiftIsLateNight'];
     previewFields.forEach(id => {
       const el = document.getElementById(id);
       if (!el) return;
